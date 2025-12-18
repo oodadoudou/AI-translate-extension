@@ -26,7 +26,7 @@
 5. 选择包含 `manifest.json` 的项目文件夹。
 
 ### 配置指南
-1. 点击浏览器右上角的扩展图标 (像素猫) -> **Settings (设置)**。
+1. 点击浏览器右上角的扩展图标 -> **Settings (设置)**。
 2. 在设置页中，您可以修改 Base URL 和 Model，并填入您的 **API Key** (必填)。
     - 默认配置：Base URL 为 `https://ark.cn-beijing.volces.com/api/v3`，模型为 `deepseek-v3-2-251201`。
 3. 您还可以设置源语言（Source Language）和目标语言（Target Language）。
