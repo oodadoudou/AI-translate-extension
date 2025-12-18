@@ -36,21 +36,10 @@ function buildUserPrompt(text, targetLanguage, sourceLanguage, autoDetect, isStr
     ? 'auto-detect the source language'
     : `source language: ${sourceLanguage || 'unknown'}`;
 
-  if (isStream) {
-    return [
-      `Translate the provided text. Target language: ${targetLanguage}.`,
-      `${sourceDescriptor}.`,
-      'Output format: First line "Detected: <LanguageName>". Second line onwards: The translated text. Preserve paragraph formatting.',
-      'Text:',
-      text,
-    ].join(' ');
-  }
-
   return [
     `Translate the provided text. Target language: ${targetLanguage}.`,
     `${sourceDescriptor}.`,
-    'Return JSON exactly matching: { "translated_text": "string", "detected_source_language": "string (human readable name, e.g. English)", "target_language": "string (human readable name)" }.',
-    'Text to translate:',
+    'Text:',
     text,
   ].join(' ');
 }
@@ -112,6 +101,12 @@ async function performChatCompletion(config, text) {
   }
 }
 
+function stripMarkdown(text) {
+  if (!text) return '';
+  // Remove markdown code blocks if present
+  return text.replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, '$1').trim();
+}
+
 function extractTranslation(raw, config) {
   const fallbackDetected = config.autoDetect !== false
     ? 'unknown'
@@ -124,8 +119,10 @@ function extractTranslation(raw, config) {
 
   if (!raw) return fallback;
 
+  const cleanRaw = stripMarkdown(raw);
+
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(cleanRaw);
     if (parsed && typeof parsed === 'object') {
       return {
         translatedText: parsed.translated_text || fallback.translatedText,

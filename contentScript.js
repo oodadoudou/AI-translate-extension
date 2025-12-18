@@ -101,9 +101,7 @@
 
     const port = chrome.runtime.connect({ name: 'translate_stream' });
     let fullText = '';
-    let detectedLang = 'unknown';
-    let headerParsed = false;
-    let buffer = '';
+    let detectedLang = state.autoDetect ? 'Auto' : (state.sourceLanguage || 'unknown');
 
     port.onMessage.addListener((msg) => {
       if (!state.enabled) {
@@ -113,57 +111,21 @@
       }
 
       if (msg.type === 'CHUNK') {
-        if (!headerParsed) {
-          buffer += msg.value;
-          const newlineIdx = buffer.indexOf('\n');
-          if (newlineIdx !== -1) {
-            const header = buffer.slice(0, newlineIdx).trim();
-            const remainder = buffer.slice(newlineIdx + 1);
-
-            const match = header.match(/^Detected:\s*(.+)$/i);
-            if (match) {
-              detectedLang = match[1];
-            }
-            headerParsed = true;
-            fullText += remainder;
-          }
-        } else {
-          fullText += msg.value;
-        }
-
-        if (headerParsed) {
-          lastResult = {
-            translatedText: fullText,
-            detectedSourceLanguage: detectedLang,
-            targetLanguage: state.targetLanguage
-          };
-          renderOverlay(rect, { mode: 'result', result: lastResult });
-        }
+        fullText += msg.value;
+        lastResult = {
+          translatedText: fullText,
+          detectedSourceLanguage: detectedLang, // 'unknown' or preset
+          targetLanguage: state.targetLanguage
+        };
+        renderOverlay(rect, { mode: 'result', result: lastResult });
       } else if (msg.type === 'DONE') {
         port.disconnect();
-        port.disconnect();
-        if (headerParsed) {
-          lastResult = {
-            translatedText: fullText,
-            detectedSourceLanguage: detectedLang,
-            targetLanguage: state.targetLanguage
-          };
-          renderOverlay(rect, { mode: 'result', result: lastResult });
-        } else {
-          const match = buffer.trim().match(/^Detected:\s*(.+)$/i);
-          if (match) {
-            detectedLang = match[1];
-            fullText = '';
-          } else {
-            fullText = buffer;
-          }
-          lastResult = {
-            translatedText: fullText,
-            detectedSourceLanguage: detectedLang,
-            targetLanguage: state.targetLanguage
-          };
-          renderOverlay(rect, { mode: 'result', result: lastResult });
-        }
+        lastResult = {
+          translatedText: fullText,
+          detectedSourceLanguage: detectedLang,
+          targetLanguage: state.targetLanguage
+        };
+        renderOverlay(rect, { mode: 'result', result: lastResult });
       } else if (msg.type === 'ERROR') {
         port.disconnect();
         renderOverlay(rect, {
@@ -173,8 +135,6 @@
         });
       }
     });
-
-    port.postMessage({ type: 'START_STREAM', text });
 
     port.postMessage({ type: 'START_STREAM', text });
   }
