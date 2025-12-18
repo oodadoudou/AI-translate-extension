@@ -66,7 +66,7 @@
 4. Click **Load unpacked** and select the project folder (the one containing `manifest.json`).
 
 ### Configuration
-1. Click the extension icon (Pixel Cat) -> **Settings**.
+1. Click the extension icon -> **Settings**.
 2. Enter the Base URL, Model, and your **API Key**.
     - Defaults are set for ARK + DeepSeek (`deepseek-v3-2-251201`).
 3. Click **Test connection** to verify, then **Save**.
