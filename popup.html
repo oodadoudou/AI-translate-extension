@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Translate</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <main class="popup">
+    <header>
+      <h1>AI Translate</h1>
+      <p class="muted">Quick toggle & target language.</p>
+    </header>
+
+    <label class="inline">
+      <input type="checkbox" id="enabled" />
+      <span>Enable translation</span>
+    </label>
+
+    <label>
+      <span>Target language</span>
+      <input type="text" id="targetLanguage" />
+    </label>
+
+    <div class="actions">
+      <button id="save">Save</button>
+      <button id="translatePage" class="primary">Translate Page</button>
+      <button id="openOptions" class="ghost">Settings</button>
+    </div>
+
+    <p id="status" aria-live="polite"></p>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
+
+</html>

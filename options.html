@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Translate Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+
+<body>
+  <main class="container">
+    <header>
+      <h1>AI Translate Settings</h1>
+      <p class="subtitle">Configure your endpoint, model, and languages. Defaults are prefilled.</p>
+    </header>
+
+    <form id="config-form">
+      <label>
+        <span>Base URL</span>
+        <input id="baseUrl" name="baseUrl" type="url" required />
+        <small>Defaults to https://ark.cn-beijing.volces.com/api/v3</small>
+      </label>
+
+      <label>
+        <span>Model</span>
+        <input id="model" name="model" type="text" required />
+        <small>Default: deepseek-v3-2-251201</small>
+      </label>
+
+      <label>
+        <span>System Prompt (Style)</span>
+        <textarea id="systemInstruction" name="systemInstruction" rows="3"
+          placeholder="You are a precise translation engine."></textarea>
+        <small>Customize the persona. JSON requirements are appended automatically.</small>
+      </label>
+
+      <label>
+        <span>API Key</span>
+        <input id="apiKey" name="apiKey" type="password" autocomplete="off" />
+        <small>Paste your ARK key. Stored locally only.</small>
+      </label>
+
+      <div class="row">
+        <label class="half">
+          <span>Target Language</span>
+          <input id="targetLanguage" name="targetLanguage" type="text" required />
+        </label>
+        <label class="half">
+          <span>Source Language (optional)</span>
+          <input id="sourceLanguage" name="sourceLanguage" type="text" placeholder="auto-detect" />
+        </label>
+      </div>
+
+      <label class="inline">
+        <input id="autoDetect" name="autoDetect" type="checkbox" />
+        <span>Auto-detect source language</span>
+      </label>
+
+      <label class="inline">
+        <input id="enabled" name="enabled" type="checkbox" />
+        <span>Enable translation</span>
+      </label>
+
+      <div class="actions">
+        <button type="submit">Save</button>
+        <button type="button" id="test-button" class="secondary">Test connection</button>
+        <button type="button" id="reset-button" class="ghost">Reset defaults</button>
+      </div>
+    </form>
+
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script type="module" src="options.js"></script>
+</body>
+
+</html>
