@@ -13,6 +13,11 @@
   let lastResult = null;
   let overlayHost = null;
   let lastRect = null;
+  let isManuallyPositioned = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let dragStartLeft = 0;
+  let dragStartTop = 0;
 
   bootstrap();
 
@@ -63,9 +68,6 @@
 
     const { text, rect } = getSelectionDetails();
     if (!text) {
-      lastText = '';
-      lastResult = null;
-      removeOverlay();
       return;
     }
 
@@ -81,6 +83,7 @@
 
     lastText = text;
     lastResult = null;
+    isManuallyPositioned = false;
     requestTranslation(text, rect);
   }
 
@@ -159,7 +162,7 @@
   }
 
   function handleScroll() {
-    if (overlayHost && lastRect) {
+    if (overlayHost && lastRect && !isManuallyPositioned) {
       const popover = overlayHost.shadowRoot.querySelector('.popover');
       const caret = overlayHost.shadowRoot.querySelector('.caret');
 
@@ -170,6 +173,40 @@
         positionOverlay(popover, caret, newRect);
       }
     }
+  }
+
+  function onDragMove(e) {
+    if (!overlayHost) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    overlayHost.style.left = `${dragStartLeft + dx}px`;
+    overlayHost.style.top = `${dragStartTop + dy}px`;
+    
+    const caret = overlayHost.shadowRoot.querySelector('.caret');
+    if (caret) caret.style.display = 'none';
+  }
+
+  function onDragEnd() {
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup', onDragEnd);
+  }
+
+  function startDrag(e) {
+    if (e.target.closest('button') || e.target.closest('.lang-selector') || e.target.closest('.translated-text')) {
+      return;
+    }
+    
+    e.preventDefault();
+    isManuallyPositioned = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    
+    const rect = overlayHost.getBoundingClientRect();
+    dragStartLeft = rect.left;
+    dragStartTop = rect.top;
+    
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
   }
 
   function handleOutsideClick(event) {
@@ -184,6 +221,9 @@
       overlayHost.parentNode.removeChild(overlayHost);
     }
     overlayHost = null;
+    isManuallyPositioned = false;
+    document.removeEventListener('mousemove', onDragMove);
+    document.removeEventListener('mouseup', onDragEnd);
   }
 
   function renderOverlay(rect, state) {
@@ -249,6 +289,10 @@
         background: #f8f9fa;
         border-radius: 8px 8px 0 0;
         justify-content: space-between;
+        cursor: grab;
+      }
+      .header:active {
+        cursor: grabbing;
       }
       .lang-selector {
         font-size: 13px;
@@ -300,7 +344,8 @@
         transition: background 0.1s;
       }
       button.action-btn:hover { background: #f6fafe; }
-      .loading { color: #5f6368; display: flex; align-items: center; gap: 8px; padding: 12px; }
+      .loading { color: #5f6368; display: flex; align-items: center; gap: 8px; padding: 12px; cursor: grab; }
+      .loading:active { cursor: grabbing; }
       .spinner {
         width: 16px; height: 16px;
         border: 2px solid #1a73e8;
@@ -363,7 +408,16 @@
 
     const popoverDiv = shadow.querySelector('.popover');
     const caretDiv = shadow.querySelector('.caret');
-    positionOverlay(popoverDiv, caretDiv, rect);
+    
+    if (!isManuallyPositioned) {
+      positionOverlay(popoverDiv, caretDiv, rect);
+    } else {
+      if (caretDiv) caretDiv.style.display = 'none';
+    }
+
+    if (popoverDiv) {
+      popoverDiv.addEventListener('mousedown', startDrag);
+    }
 
     const copyButton = shadow.getElementById('copy');
     if (copyButton && state.result) {
