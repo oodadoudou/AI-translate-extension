@@ -515,9 +515,16 @@
         updateToggleUI('Original');
       } else {
         updateToggleUI('Translating...');
-        await translatePage();
-        isActive = true;
-        updateToggleUI('Translated');
+        try {
+          await translatePage();
+          isActive = true;
+          updateToggleUI('Translated');
+        } catch (error) {
+          console.error('Page translation failed', error);
+          isActive = false;
+          updateToggleUI('Translation failed');
+          setTimeout(() => updateToggleUI('Original'), 2000);
+        }
       }
     }
 
@@ -587,6 +594,7 @@
       const batchSize = 20;
       const batches = [];
       let currentBatch = [];
+      let segmentsNeedingTranslation = 0;
 
       for (const node of nodesToTranslate) {
         const text = node.nodeValue.trim();
@@ -598,6 +606,7 @@
           node.nodeValue = node.nodeValue.replace(text, translatedMap.get(text));
         } else {
           currentBatch.push({ node, text });
+          segmentsNeedingTranslation++;
           if (currentBatch.length >= batchSize) {
             batches.push(currentBatch);
             currentBatch = [];
@@ -606,23 +615,86 @@
       }
       if (currentBatch.length) batches.push(currentBatch);
 
-      for (const batch of batches) {
-        const texts = batch.map(b => b.text);
-        try {
-          const response = await sendMessage({ type: 'TRANSLATE_BATCH', texts });
-          if (response && response.ok && response.result) {
-            const translations = response.result;
-            batch.forEach((item, index) => {
-              const translated = translations[index];
-              if (translated) {
-                translatedMap.set(item.text, translated);
-                item.node.nodeValue = item.node.nodeValue.replace(item.text, translated);
-              }
-            });
-          }
-        } catch (e) {
-          console.error('Batch translation failed', e);
+      if (!batches.length || segmentsNeedingTranslation === 0) {
+        updateToggleUI('Translated');
+        return;
+      }
+
+      const concurrencyLimit = Math.min(3, batches.length);
+      let completedSegments = 0;
+
+      const reportProgress = () => {
+        completedSegments++;
+        updateToggleUI(`Translating... (${completedSegments}/${segmentsNeedingTranslation})`);
+      };
+
+      updateToggleUI(`Translating... (0/${segmentsNeedingTranslation})`);
+      const initialResult = await runBatchesWithConcurrency(batches, concurrencyLimit || 1, reportProgress);
+      let totalCompleted = initialResult.completed;
+
+      if (initialResult.failedBatches.length) {
+        console.warn('Retrying failed batches sequentially', initialResult.failedBatches.length);
+        const retryResult = await runBatchesWithConcurrency(initialResult.failedBatches, 1, reportProgress);
+        totalCompleted += retryResult.completed;
+
+        if (retryResult.failedBatches.length) {
+          throw new Error('Some segments failed to translate');
         }
+      }
+
+      if (!totalCompleted) {
+        throw new Error('Translation did not apply to any segments');
+      }
+    }
+
+    async function runBatchesWithConcurrency(batches, limit, onProgress) {
+      let cursor = 0;
+      let completed = 0;
+      const failedBatches = [];
+      const workers = Array.from({ length: Math.max(1, limit) }, () => worker());
+      await Promise.all(workers);
+      return { completed, failedBatches };
+
+      async function worker() {
+        while (true) {
+          const index = cursor++;
+          if (index >= batches.length) break;
+          const batch = batches[index];
+          const unresolved = await processBatch(batch, () => {
+            completed++;
+            if (onProgress) onProgress();
+          });
+          if (unresolved.length) {
+            failedBatches.push(unresolved);
+          }
+        }
+      }
+    }
+
+    async function processBatch(batch, onProgress) {
+      const texts = batch.map((item) => item.text);
+      try {
+        const response = await sendMessage({ type: 'TRANSLATE_BATCH', texts });
+        if (!response || !response.ok || !Array.isArray(response.result)) {
+          return batch;
+        }
+
+        const translations = response.result;
+        const unresolved = [];
+        batch.forEach((item, index) => {
+          const translated = translations[index];
+          if (translated) {
+            translatedMap.set(item.text, translated);
+            item.node.nodeValue = item.node.nodeValue.replace(item.text, translated);
+            if (onProgress) onProgress();
+          } else {
+            unresolved.push(item);
+          }
+        });
+        return unresolved;
+      } catch (error) {
+        console.error('Batch translation failed', error);
+        return batch;
       }
     }
 

@@ -102,9 +102,17 @@ async function performChatCompletion(config, text) {
 }
 
 function stripMarkdown(text) {
-  if (!text) return '';
+  if (text == null) return '';
+  let normalized = text;
+  if (typeof normalized !== 'string') {
+    try {
+      normalized = JSON.stringify(normalized);
+    } catch (error) {
+      normalized = String(normalized);
+    }
+  }
   // Remove markdown code blocks if present
-  return text.replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, '$1').trim();
+  return normalized.replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, '$1').trim();
 }
 
 function extractTranslation(raw, config) {
@@ -263,15 +271,77 @@ async function performBatchChatCompletion(config, texts) {
   if (!response.ok) throw new Error(`Batch request failed: ${response.status}`);
 
   const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content || '{}';
+  const raw = data.choices?.[0]?.message?.content || '';
+  const translations = parseBatchTranslations(raw, texts.length);
 
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed.translations || [];
-  } catch (e) {
-    console.error('Batch translation parse error', e, raw);
-    return [];
+  if (!translations.length) {
+    console.error('Batch translation parse error', raw);
   }
+
+  return translations;
+}
+
+function parseBatchTranslations(raw, expectedCount) {
+  if (!raw) return [];
+
+  const normalizeArray = (arr) => arr.map((entry) => {
+    if (typeof entry === 'string') return entry;
+    if (entry && typeof entry === 'object') {
+      if (typeof entry.text === 'string') return entry.text;
+      try {
+        return JSON.stringify(entry);
+      } catch (error) {
+        return String(entry);
+      }
+    }
+    return String(entry ?? '');
+  });
+
+  if (Array.isArray(raw)) return normalizeArray(raw);
+  if (raw && typeof raw === 'object') {
+    if (Array.isArray(raw.translations)) return normalizeArray(raw.translations);
+    if (typeof raw.translations === 'string') return [raw.translations];
+    try {
+      raw = JSON.stringify(raw);
+    } catch (error) {
+      raw = String(raw);
+    }
+  }
+
+  const cleanRaw = stripMarkdown(raw).trim();
+  if (!cleanRaw) return [];
+
+  const tryParse = (candidate) => {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && Array.isArray(parsed.translations)) return parsed.translations;
+      if (parsed && typeof parsed.translations === 'string') return [parsed.translations];
+    } catch (error) {
+      return null;
+    }
+    return null;
+  };
+
+  const parsed = tryParse(cleanRaw);
+  if (parsed && parsed.length) return parsed;
+
+  // Some models respond with a JSON string without braces, try to coerce.
+  if (!cleanRaw.startsWith('{') && cleanRaw.startsWith('[')) {
+    const arrayOnly = tryParse(cleanRaw);
+    if (arrayOnly && arrayOnly.length) return arrayOnly;
+  }
+
+  const fallback = cleanRaw
+    .split(/\r?\n+/)
+    .map((line) => line.replace(/^\d+[\).>-]?\s*/, '').trim())
+    .filter(Boolean);
+
+  if (fallback.length === expectedCount) {
+    return fallback;
+  }
+
+  return [];
 }
 
 async function streamChatCompletion(config, text, port) {
