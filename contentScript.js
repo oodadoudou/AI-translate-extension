@@ -105,9 +105,30 @@
     const port = chrome.runtime.connect({ name: 'translate_stream' });
     let fullText = '';
     let detectedLang = state.autoDetect ? 'Auto' : (state.sourceLanguage || 'unknown');
+    let finished = false;
+
+    const handleDisconnect = () => {
+      if (finished) return;
+      const runtimeError = chrome.runtime.lastError;
+      const message = runtimeError?.message || 'Translation channel closed before finishing.';
+      renderOverlay(rect, {
+        mode: 'error',
+        message,
+        retryText: text,
+      });
+    };
+
+    const markFinished = () => {
+      if (finished) return;
+      finished = true;
+      port.onDisconnect.removeListener(handleDisconnect);
+    };
+
+    port.onDisconnect.addListener(handleDisconnect);
 
     port.onMessage.addListener((msg) => {
       if (!state.enabled) {
+        markFinished();
         port.disconnect();
         removeOverlay();
         return;
@@ -122,6 +143,7 @@
         };
         renderOverlay(rect, { mode: 'result', result: lastResult });
       } else if (msg.type === 'DONE') {
+        markFinished();
         port.disconnect();
         lastResult = {
           translatedText: fullText,
@@ -130,6 +152,7 @@
         };
         renderOverlay(rect, { mode: 'result', result: lastResult });
       } else if (msg.type === 'ERROR') {
+        markFinished();
         port.disconnect();
         renderOverlay(rect, {
           mode: 'error',

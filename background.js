@@ -1,6 +1,7 @@
 import { DEFAULT_CONFIG, getConfig, setConfig, setEnabled, watchConfig } from './shared/config.js';
 
 const SYSTEM_PROMPT_SUFFIX = 'Return only valid JSON per the provided schema; do not add prose. Strictly preserve original paragraph formatting and line breaks.';
+const STREAM_TIMEOUT_MS = 60000;
 
 let cachedConfig = { ...DEFAULT_CONFIG };
 
@@ -227,16 +228,30 @@ function handleMessage(message, sender, sendResponse) {
 function handleConnect(port) {
   if (port.name !== 'translate_stream') return;
   port.onMessage.addListener((msg) => {
-    if (msg.type === 'START_STREAM') {
-      streamChatCompletion(cachedConfig, msg.text, port).catch(err => {
+    if (msg.type !== 'START_STREAM') return;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), STREAM_TIMEOUT_MS);
+    const disconnectHandler = () => controller.abort();
+    port.onDisconnect.addListener(disconnectHandler);
+
+    streamChatCompletion(cachedConfig, msg.text, port, controller.signal)
+      .catch((err) => {
+        const isAbort = err && err.name === 'AbortError';
+        const message = isAbort
+          ? 'Translation timed out. Please try again.'
+          : (err?.message || 'Translation failed.');
         try {
-          port.postMessage({ type: 'ERROR', error: err.message });
+          port.postMessage({ type: 'ERROR', error: message });
           port.disconnect();
         } catch (e) {
           // Port already disconnected, ignore
         }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        port.onDisconnect.removeListener(disconnectHandler);
       });
-    }
   });
 }
 
@@ -344,7 +359,7 @@ function parseBatchTranslations(raw, expectedCount) {
   return [];
 }
 
-async function streamChatCompletion(config, text, port) {
+async function streamChatCompletion(config, text, port, abortSignal) {
   const apiKey = (config.apiKey || '').trim();
   if (!apiKey) throw new Error('API key is missing.');
 
@@ -367,20 +382,34 @@ async function streamChatCompletion(config, text, port) {
     stream: true,
   };
 
+  if (abortSignal?.aborted) {
+    const error = new DOMException('Aborted', 'AbortError');
+    throw error;
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify(body),
+    signal: abortSignal,
   });
 
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
 
-  const reader = response.body.getReader();
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error('Streaming response body unavailable.');
   const decoder = new TextDecoder();
   let buffer = '';
-  let isFirstChunk = true;
+  let reachedDone = false;
 
   while (true) {
+    if (abortSignal?.aborted) {
+      try {
+        await reader.cancel();
+      } catch (e) { }
+      const error = new DOMException('Aborted', 'AbortError');
+      throw error;
+    }
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
@@ -390,7 +419,11 @@ async function streamChatCompletion(config, text, port) {
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (!trimmed || trimmed === 'data: [DONE]') continue;
+      if (!trimmed) continue;
+      if (trimmed === 'data: [DONE]') {
+        reachedDone = true;
+        break;
+      }
       if (trimmed.startsWith('data: ')) {
         try {
           const json = JSON.parse(trimmed.slice(6));
@@ -400,6 +433,13 @@ async function streamChatCompletion(config, text, port) {
           }
         } catch (e) { }
       }
+    }
+
+    if (reachedDone) {
+      try {
+        await reader.cancel();
+      } catch (e) { }
+      break;
     }
   }
 
