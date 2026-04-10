@@ -1,0 +1,28 @@
+<svg width="320" height="180" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Helvetica Neue, Arial, sans-serif">
+  <filter id="shadow">
+    <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.10)"/>
+  </filter>
+  <!-- Caret -->
+  <rect x="152" y="8" width="12" height="12" fill="white" stroke="#111" stroke-width="1.5"
+        transform="rotate(45 158 14)" filter="url(#shadow)"/>
+  <!-- Card -->
+  <rect x="20" y="16" width="280" height="152" rx="8" fill="white" stroke="#111" stroke-width="1.5" filter="url(#shadow)"/>
+  <!-- Toolbar -->
+  <line x1="20" y1="44" x2="300" y2="44" stroke="#f0f0f0" stroke-width="1"/>
+  <text x="32" y="34" font-size="11" fill="#888">Simplified Chinese</text>
+  <!-- Cache badge -->
+  <rect x="152" y="22" width="72" height="16" rx="4" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1"/>
+  <text x="188" y="34" font-size="10" fill="#166534" font-weight="500" text-anchor="middle">缓存 · 0 tokens</text>
+  <!-- Icons -->
+  <text x="245" y="34" font-size="13" fill="#bbb">⊙</text>
+  <text x="263" y="34" font-size="13" fill="#bbb">⟳</text>
+  <text x="281" y="34" font-size="11" fill="#bbb">✕</text>
+  <!-- Body -->
+  <text x="32" y="64" font-size="15" fill="#111">缓存命中，瞬间显示，</text>
+  <text x="32" y="86" font-size="15" fill="#111">零 API 请求，节省 tokens。</text>
+  <!-- Footer -->
+  <line x1="20" y1="130" x2="300" y2="130" stroke="#f0f0f0" stroke-width="1"/>
+  <text x="32" y="150" font-size="11" fill="#16a34a">节省 ~86t ✓</text>
+  <rect x="248" y="134" width="40" height="24" rx="5" fill="#111"/>
+  <text x="268" y="151" font-size="12" fill="white" font-weight="600" text-anchor="middle">Copy</text>
+</svg>

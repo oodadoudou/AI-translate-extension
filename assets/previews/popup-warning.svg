@@ -1,0 +1,26 @@
+<svg width="320" height="200" viewBox="0 0 320 200" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Helvetica Neue, Arial, sans-serif">
+  <filter id="shadow">
+    <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.10)"/>
+  </filter>
+  <!-- Caret -->
+  <rect x="152" y="8" width="12" height="12" fill="white" stroke="#111" stroke-width="1.5"
+        transform="rotate(45 158 14)" filter="url(#shadow)"/>
+  <!-- Card -->
+  <rect x="20" y="16" width="280" height="176" rx="8" fill="white" stroke="#111" stroke-width="1.5" filter="url(#shadow)"/>
+  <!-- Warning title -->
+  <text x="32" y="44" font-size="14" fill="#111" font-weight="700">选中内容较长</text>
+  <text x="32" y="63" font-size="13" fill="#666">共 </text>
+  <text x="52" y="63" font-size="13" fill="#111" font-weight="600">842 字</text>
+  <text x="92" y="63" font-size="13" fill="#666">，约 </text>
+  <text x="118" y="63" font-size="13" fill="#111" font-weight="600">620 tokens</text>
+  <!-- Primary button -->
+  <rect x="28" y="76" width="264" height="38" rx="6" fill="#111"/>
+  <text x="40" y="100" font-size="13" fill="white" font-weight="500">只翻译前 300 字</text>
+  <text x="262" y="100" font-size="11" fill="rgba(255,255,255,0.6)" text-anchor="end">~220 tokens</text>
+  <!-- Secondary buttons -->
+  <rect x="28" y="122" width="174" height="34" rx="6" fill="white" stroke="#ddd" stroke-width="1.5"/>
+  <text x="115" y="144" font-size="13" fill="#333" font-weight="500" text-anchor="middle">全文翻译</text>
+  <text x="174" y="144" font-size="11" fill="#aaa"> 620t</text>
+  <rect x="210" y="122" width="82" height="34" rx="6" fill="white" stroke="#eee" stroke-width="1.5"/>
+  <text x="251" y="144" font-size="13" fill="#bbb" text-anchor="middle">取消</text>
+</svg>

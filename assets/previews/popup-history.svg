@@ -1,0 +1,27 @@
+<svg width="320" height="240" viewBox="0 0 320 240" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Helvetica Neue, Arial, sans-serif">
+  <filter id="shadow">
+    <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.10)"/>
+  </filter>
+  <!-- Card -->
+  <rect x="20" y="16" width="280" height="212" rx="8" fill="white" stroke="#111" stroke-width="1.5" filter="url(#shadow)"/>
+  <!-- Header -->
+  <line x1="20" y1="46" x2="300" y2="46" stroke="#f0f0f0" stroke-width="1"/>
+  <text x="32" y="36" font-size="13" fill="#111" font-weight="700">本页历史 (3)</text>
+  <text x="281" y="36" font-size="11" fill="#bbb">✕</text>
+  <!-- Item 1 -->
+  <line x1="20" y1="90" x2="300" y2="90" stroke="#f8f8f8" stroke-width="1"/>
+  <text x="32" y="60" font-size="11" fill="#bbb">2 分钟前 · 180 tokens</text>
+  <text x="32" y="78" font-size="13" fill="#111">这是第一段的翻译结果，点击可重新展示…</text>
+  <!-- Item 2 -->
+  <rect x="20" y="90" width="280" height="44" fill="#fafafa"/>
+  <line x1="20" y1="134" x2="300" y2="134" stroke="#f8f8f8" stroke-width="1"/>
+  <text x="32" y="106" font-size="11" fill="#bbb">8 分钟前 · 缓存</text>
+  <text x="32" y="124" font-size="13" fill="#111">第二段翻译，从缓存命中，0 tokens…</text>
+  <!-- Item 3 -->
+  <text x="32" y="150" font-size="11" fill="#bbb">15 分钟前 · 220 tokens</text>
+  <text x="32" y="168" font-size="13" fill="#111">第三段翻译内容，本次共消耗…</text>
+  <!-- Footer -->
+  <line x1="20" y1="188" x2="300" y2="188" stroke="#f0f0f0" stroke-width="1"/>
+  <text x="32" y="208" font-size="11" fill="#bbb">本页共消耗 400 tokens</text>
+  <text x="278" y="208" font-size="11" fill="#bbb" text-anchor="end">清除</text>
+</svg>
