@@ -1,15 +1,15 @@
 (function () {
-  const STORAGE_KEY = 'aiTranslateConfig';
+  const STORAGE_KEY = "aiTranslateConfig";
   const DEFAULT_STATE = {
     enabled: true,
-    targetLanguage: 'Simplified Chinese',
+    targetLanguage: "Simplified Chinese",
     autoDetect: true,
-    sourceLanguage: '',
+    sourceLanguage: "",
   };
 
   let state = { ...DEFAULT_STATE };
   let debounceId = null;
-  let lastText = '';
+  let lastText = "";
   let lastResult = null;
   let overlayHost = null;
   let lastRect = null;
@@ -24,31 +24,31 @@
   function bootstrap() {
     requestInitialState();
     chrome.storage.onChanged.addListener(handleStorageChange);
-    document.addEventListener('mouseup', handleSelectionEvent);
-    document.addEventListener('keyup', handleSelectionEvent);
-    document.addEventListener('selectionchange', handleSelectionEvent);
-    document.addEventListener('keydown', handleEscape, true);
-    window.addEventListener('scroll', handleScroll, true);
-    document.addEventListener('mousedown', handleOutsideClick, true);
+    document.addEventListener("mouseup", handleSelectionEvent);
+    document.addEventListener("keyup", handleSelectionEvent);
+    document.addEventListener("selectionchange", handleSelectionEvent);
+    document.addEventListener("keydown", handleEscape, true);
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("mousedown", handleOutsideClick, true);
     chrome.runtime.onMessage.addListener(handleContentMessage);
   }
 
   function handleStorageChange(changes, areaName) {
-    if (areaName !== 'sync' && areaName !== 'local') return;
+    if (areaName !== "sync" && areaName !== "local") return;
     if (!changes[STORAGE_KEY]) return;
     const next = changes[STORAGE_KEY].newValue || {};
     state = {
       ...state,
       ...next,
     };
-    lastText = '';
+    lastText = "";
     if (!state.enabled) {
       removeOverlay();
     }
   }
 
   function requestInitialState() {
-    sendMessage({ type: 'GET_STATE' }).then((response) => {
+    sendMessage({ type: "GET_STATE" }).then((response) => {
       if (response && response.ok && response.state) {
         state = { ...state, ...response.state };
       }
@@ -75,7 +75,7 @@
 
     if (text === lastText && lastResult) {
       renderOverlay(rect, {
-        mode: 'result',
+        mode: "result",
         result: lastResult,
       });
       return;
@@ -89,9 +89,10 @@
 
   function getSelectionDetails() {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return { text: '', rect: null };
+    if (!selection || selection.rangeCount === 0)
+      return { text: "", rect: null };
     const text = selection.toString().trim();
-    if (!text) return { text: '', rect: null };
+    if (!text) return { text: "", rect: null };
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
     return { text, rect };
@@ -100,19 +101,22 @@
   function requestTranslation(text, rect) {
     if (!state.enabled) return;
 
-    renderOverlay(rect, { mode: 'loading' });
+    renderOverlay(rect, { mode: "loading" });
 
-    const port = chrome.runtime.connect({ name: 'translate_stream' });
-    let fullText = '';
-    let detectedLang = state.autoDetect ? 'Auto' : (state.sourceLanguage || 'unknown');
+    const port = chrome.runtime.connect({ name: "translate_stream" });
+    let fullText = "";
+    let detectedLang = state.autoDetect
+      ? "Auto"
+      : state.sourceLanguage || "unknown";
     let finished = false;
 
     const handleDisconnect = () => {
       if (finished) return;
       const runtimeError = chrome.runtime.lastError;
-      const message = runtimeError?.message || 'Translation channel closed before finishing.';
+      const message =
+        runtimeError?.message || "Translation channel closed before finishing.";
       renderOverlay(rect, {
-        mode: 'error',
+        mode: "error",
         message,
         retryText: text,
       });
@@ -134,35 +138,35 @@
         return;
       }
 
-      if (msg.type === 'CHUNK') {
+      if (msg.type === "CHUNK") {
         fullText += msg.value;
         lastResult = {
           translatedText: fullText,
           detectedSourceLanguage: detectedLang, // 'unknown' or preset
-          targetLanguage: state.targetLanguage
+          targetLanguage: state.targetLanguage,
         };
-        renderOverlay(rect, { mode: 'result', result: lastResult });
-      } else if (msg.type === 'DONE') {
+        renderOverlay(rect, { mode: "result", result: lastResult });
+      } else if (msg.type === "DONE") {
         markFinished();
         port.disconnect();
         lastResult = {
           translatedText: fullText,
           detectedSourceLanguage: detectedLang,
-          targetLanguage: state.targetLanguage
+          targetLanguage: state.targetLanguage,
         };
-        renderOverlay(rect, { mode: 'result', result: lastResult });
-      } else if (msg.type === 'ERROR') {
+        renderOverlay(rect, { mode: "result", result: lastResult });
+      } else if (msg.type === "ERROR") {
         markFinished();
         port.disconnect();
         renderOverlay(rect, {
-          mode: 'error',
-          message: msg.error || 'Translation failed.',
+          mode: "error",
+          message: msg.error || "Translation failed.",
           retryText: text,
         });
       }
     });
 
-    port.postMessage({ type: 'START_STREAM', text });
+    port.postMessage({ type: "START_STREAM", text });
   }
 
   function sendMessage(message) {
@@ -179,15 +183,15 @@
   }
 
   function handleEscape(event) {
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       removeOverlay();
     }
   }
 
   function handleScroll() {
     if (overlayHost && lastRect && !isManuallyPositioned) {
-      const popover = overlayHost.shadowRoot.querySelector('.popover');
-      const caret = overlayHost.shadowRoot.querySelector('.caret');
+      const popover = overlayHost.shadowRoot.querySelector(".popover");
+      const caret = overlayHost.shadowRoot.querySelector(".caret");
 
       const selection = window.getSelection();
       if (selection.rangeCount > 0) {
@@ -204,32 +208,36 @@
     const dy = e.clientY - dragStartY;
     overlayHost.style.left = `${dragStartLeft + dx}px`;
     overlayHost.style.top = `${dragStartTop + dy}px`;
-    
-    const caret = overlayHost.shadowRoot.querySelector('.caret');
-    if (caret) caret.style.display = 'none';
+
+    const caret = overlayHost.shadowRoot.querySelector(".caret");
+    if (caret) caret.style.display = "none";
   }
 
   function onDragEnd() {
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('mouseup', onDragEnd);
+    document.removeEventListener("mousemove", onDragMove);
+    document.removeEventListener("mouseup", onDragEnd);
   }
 
   function startDrag(e) {
-    if (e.target.closest('button') || e.target.closest('.lang-selector') || e.target.closest('.translated-text')) {
+    if (
+      e.target.closest("button") ||
+      e.target.closest(".lang-selector") ||
+      e.target.closest(".translated-text")
+    ) {
       return;
     }
-    
+
     e.preventDefault();
     isManuallyPositioned = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
-    
+
     const rect = overlayHost.getBoundingClientRect();
     dragStartLeft = rect.left;
     dragStartTop = rect.top;
-    
-    document.addEventListener('mousemove', onDragMove);
-    document.addEventListener('mouseup', onDragEnd);
+
+    document.addEventListener("mousemove", onDragMove);
+    document.addEventListener("mouseup", onDragEnd);
   }
 
   function handleOutsideClick(event) {
@@ -245,17 +253,17 @@
     }
     overlayHost = null;
     isManuallyPositioned = false;
-    document.removeEventListener('mousemove', onDragMove);
-    document.removeEventListener('mouseup', onDragEnd);
+    document.removeEventListener("mousemove", onDragMove);
+    document.removeEventListener("mouseup", onDragEnd);
   }
 
   function renderOverlay(rect, state) {
     if (!overlayHost) {
-      overlayHost = document.createElement('div');
-      overlayHost.style.position = 'fixed';
-      overlayHost.style.zIndex = '2147483647';
-      overlayHost.style.pointerEvents = 'none';
-      overlayHost.attachShadow({ mode: 'open' });
+      overlayHost = document.createElement("div");
+      overlayHost.style.position = "fixed";
+      overlayHost.style.zIndex = "2147483647";
+      overlayHost.style.pointerEvents = "none";
+      overlayHost.attachShadow({ mode: "open" });
       document.body.appendChild(overlayHost);
     }
 
@@ -383,7 +391,7 @@
     const closeIcon = `<svg viewBox="0 0 14 14"><path d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7z"/></svg>`;
 
     const content = (() => {
-      if (mode === 'loading') {
+      if (mode === "loading") {
         return `
           <div class="popover">
             <div class="caret caret-top"></div>
@@ -391,7 +399,7 @@
           </div>
         `;
       }
-      if (mode === 'error') {
+      if (mode === "error") {
         return `
           <div class="popover">
             <div class="caret caret-top"></div>
@@ -399,20 +407,20 @@
               <span>Error</span>
               <button class="close-btn" id="close">${closeIcon}</button>
             </div>
-            <div class="error">${escapeHtml(state.message || 'Error details unknown')}</div>
+            <div class="error">${escapeHtml(state.message || "Error details unknown")}</div>
             <div class="footer">
               <button class="action-btn" id="retry">Try again</button>
             </div>
           </div>
         `;
       }
-      if (mode === 'result' && state.result) {
+      if (mode === "result" && state.result) {
         const { translatedText, targetLanguage } = state.result;
         return `
           <div class="popover">
             <div class="caret caret-top"></div>
             <div class="header">
-               <div class="lang-selector">${escapeHtml(targetLanguage || 'Target Language')}</div>
+               <div class="lang-selector">${escapeHtml(targetLanguage || "Target Language")}</div>
                <button class="close-btn" id="close">${closeIcon}</button>
             </div>
             <div class="content">
@@ -424,35 +432,39 @@
           </div>
         `;
       }
-      return '';
+      return "";
     })();
 
     shadow.innerHTML = `<style>${style}</style>${content}`;
 
-    const popoverDiv = shadow.querySelector('.popover');
-    const caretDiv = shadow.querySelector('.caret');
-    
+    const popoverDiv = shadow.querySelector(".popover");
+    const caretDiv = shadow.querySelector(".caret");
+
     if (!isManuallyPositioned) {
       positionOverlay(popoverDiv, caretDiv, rect);
     } else {
-      if (caretDiv) caretDiv.style.display = 'none';
+      if (caretDiv) caretDiv.style.display = "none";
     }
 
     if (popoverDiv) {
-      popoverDiv.addEventListener('mousedown', startDrag);
+      popoverDiv.addEventListener("mousedown", startDrag);
     }
 
-    const copyButton = shadow.getElementById('copy');
+    const copyButton = shadow.getElementById("copy");
     if (copyButton && state.result) {
-      copyButton.addEventListener('click', () => copyText(state.result.translatedText));
+      copyButton.addEventListener("click", () =>
+        copyText(state.result.translatedText),
+      );
     }
-    const closeButton = shadow.getElementById('close');
+    const closeButton = shadow.getElementById("close");
     if (closeButton) {
-      closeButton.addEventListener('click', removeOverlay);
+      closeButton.addEventListener("click", removeOverlay);
     }
-    const retryButton = shadow.getElementById('retry');
+    const retryButton = shadow.getElementById("retry");
     if (retryButton && state.retryText) {
-      retryButton.addEventListener('click', () => requestTranslation(state.retryText, rect));
+      retryButton.addEventListener("click", () =>
+        requestTranslation(state.retryText, rect),
+      );
     }
   }
 
@@ -468,9 +480,9 @@
       const w = pRect.width;
       const h = pRect.height;
 
-      const center = rect.left + (rect.width / 2);
+      const center = rect.left + rect.width / 2;
 
-      let left = center - (w / 2);
+      let left = center - w / 2;
       let top = rect.bottom + spacing;
       let pointingUp = true;
 
@@ -489,10 +501,13 @@
       overlayHost.style.top = `${top}px`;
 
       if (caret) {
-        caret.className = pointingUp ? 'caret caret-top' : 'caret caret-bottom';
+        caret.className = pointingUp ? "caret caret-top" : "caret caret-bottom";
         const relativeCenter = center - left;
         const safeMargin = 16;
-        const clampedCenter = Math.max(safeMargin, Math.min(w - safeMargin, relativeCenter));
+        const clampedCenter = Math.max(
+          safeMargin,
+          Math.min(w - safeMargin, relativeCenter),
+        );
         caret.style.left = `${clampedCenter}px`;
       }
     });
@@ -503,21 +518,21 @@
     try {
       await navigator.clipboard.writeText(text);
     } catch (error) {
-      console.error('Copy failed', error);
+      console.error("Copy failed", error);
     }
   }
 
   function escapeHtml(value) {
-    if (!value) return '';
+    if (!value) return "";
     return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
   function handleContentMessage(message, sender, sendResponse) {
-    if (message.type === 'TRANSLATE_PAGE') {
+    if (message.type === "TRANSLATE_PAGE") {
       PageTranslator.toggle();
       sendResponse({ ok: true });
     }
@@ -529,31 +544,53 @@
     let translatedMap = new Map();
     let toggleBtn = null;
 
+    function readPageConcurrency() {
+      return new Promise((resolve) => {
+        const areas = [chrome.storage.sync, chrome.storage.local].filter(
+          Boolean,
+        );
+        const tryNext = (i) => {
+          if (i >= areas.length) {
+            resolve(10);
+            return;
+          }
+          areas[i].get([STORAGE_KEY], (result) => {
+            const val = result?.[STORAGE_KEY]?.concurrency;
+            if (val != null && !chrome.runtime.lastError)
+              resolve(Math.max(1, Math.min(50, val)));
+            else tryNext(i + 1);
+          });
+        };
+        tryNext(0);
+      });
+    }
+
     async function toggle() {
       if (!toggleBtn) createToggleUI();
 
       if (isActive) {
         restoreOriginal();
         isActive = false;
-        updateToggleUI('Original');
+        updateToggleUI("Original");
       } else {
-        updateToggleUI('Translating...');
+        updateToggleUI("Translating...");
         try {
-          await translatePage();
+          const concurrency = await readPageConcurrency();
+          await translatePage(concurrency);
           isActive = true;
-          updateToggleUI('Translated');
+          updateToggleUI("Translated");
         } catch (error) {
-          console.error('Page translation failed', error);
+          console.error("Page translation failed", error);
           isActive = false;
-          updateToggleUI('Translation failed');
-          setTimeout(() => updateToggleUI('Original'), 2000);
+          updateToggleUI("Translation failed");
+          setTimeout(() => updateToggleUI("Original"), 2000);
         }
       }
     }
 
     function createToggleUI() {
-      const div = document.createElement('div');
-      div.id = 'ai-translate-page-toggle';
+      const div = document.createElement("div");
+      div.id = "ai-translate-page-toggle";
       div.style.cssText = `
         position: fixed;
         bottom: 20px;
@@ -583,7 +620,7 @@
 
     function updateToggleUI(text) {
       if (toggleBtn) {
-        toggleBtn.querySelector('#status-text').textContent = text;
+        toggleBtn.querySelector("#status-text").textContent = text;
       }
     }
 
@@ -593,26 +630,44 @@
       }
     }
 
-    async function translatePage() {
+    async function translatePage(concurrency) {
       const walker = document.createTreeWalker(
         document.body,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: (node) => {
             if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-            if (node.parentElement && ['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'INPUT'].includes(node.parentElement.tagName)) return NodeFilter.FILTER_REJECT;
-            if (node.parentElement && node.parentElement.isContentEditable) return NodeFilter.FILTER_REJECT;
-            if (node.parentElement && node.parentElement.offsetParent === null) return NodeFilter.FILTER_REJECT;
+            if (
+              node.parentElement &&
+              ["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT"].includes(
+                node.parentElement.tagName,
+              )
+            )
+              return NodeFilter.FILTER_REJECT;
+            if (node.parentElement && node.parentElement.isContentEditable)
+              return NodeFilter.FILTER_REJECT;
+            if (node.parentElement && node.parentElement.offsetParent === null)
+              return NodeFilter.FILTER_REJECT;
             return NodeFilter.FILTER_ACCEPT;
-          }
-        }
+          },
+        },
       );
 
       const nodesToTranslate = [];
       let currentNode;
-      while (currentNode = walker.nextNode()) {
+      while ((currentNode = walker.nextNode())) {
         nodesToTranslate.push(currentNode);
       }
+
+      // Viewport-first: sort visible nodes to the front so they translate first
+      const vh = window.innerHeight;
+      nodesToTranslate.sort((a, b) => {
+        const ra = a.parentElement?.getBoundingClientRect();
+        const rb = b.parentElement?.getBoundingClientRect();
+        const aVis = ra && ra.top < vh && ra.bottom > 0 ? 0 : 1;
+        const bVis = rb && rb.top < vh && rb.bottom > 0 ? 0 : 1;
+        return aVis - bVis;
+      });
 
       const batchSize = 20;
       const batches = [];
@@ -626,7 +681,10 @@
         }
 
         if (translatedMap.has(text)) {
-          node.nodeValue = node.nodeValue.replace(text, translatedMap.get(text));
+          node.nodeValue = node.nodeValue.replace(
+            text,
+            translatedMap.get(text),
+          );
         } else {
           currentBatch.push({ node, text });
           segmentsNeedingTranslation++;
@@ -639,34 +697,47 @@
       if (currentBatch.length) batches.push(currentBatch);
 
       if (!batches.length || segmentsNeedingTranslation === 0) {
-        updateToggleUI('Translated');
+        updateToggleUI("Translated");
         return;
       }
 
-      const concurrencyLimit = Math.min(3, batches.length);
+      const concurrencyLimit = Math.min(concurrency || 10, batches.length);
       let completedSegments = 0;
 
       const reportProgress = () => {
         completedSegments++;
-        updateToggleUI(`Translating... (${completedSegments}/${segmentsNeedingTranslation})`);
+        updateToggleUI(
+          `Translating... (${completedSegments}/${segmentsNeedingTranslation})`,
+        );
       };
 
       updateToggleUI(`Translating... (0/${segmentsNeedingTranslation})`);
-      const initialResult = await runBatchesWithConcurrency(batches, concurrencyLimit || 1, reportProgress);
+      const initialResult = await runBatchesWithConcurrency(
+        batches,
+        concurrencyLimit || 1,
+        reportProgress,
+      );
       let totalCompleted = initialResult.completed;
 
       if (initialResult.failedBatches.length) {
-        console.warn('Retrying failed batches sequentially', initialResult.failedBatches.length);
-        const retryResult = await runBatchesWithConcurrency(initialResult.failedBatches, 1, reportProgress);
+        console.warn(
+          "Retrying failed batches sequentially",
+          initialResult.failedBatches.length,
+        );
+        const retryResult = await runBatchesWithConcurrency(
+          initialResult.failedBatches,
+          1,
+          reportProgress,
+        );
         totalCompleted += retryResult.completed;
 
         if (retryResult.failedBatches.length) {
-          throw new Error('Some segments failed to translate');
+          throw new Error("Some segments failed to translate");
         }
       }
 
       if (!totalCompleted) {
-        throw new Error('Translation did not apply to any segments');
+        throw new Error("Translation did not apply to any segments");
       }
     }
 
@@ -674,7 +745,9 @@
       let cursor = 0;
       let completed = 0;
       const failedBatches = [];
-      const workers = Array.from({ length: Math.max(1, limit) }, () => worker());
+      const workers = Array.from({ length: Math.max(1, limit) }, () =>
+        worker(),
+      );
       await Promise.all(workers);
       return { completed, failedBatches };
 
@@ -697,26 +770,38 @@
     async function processBatch(batch, onProgress) {
       const texts = batch.map((item) => item.text);
       try {
-        const response = await sendMessage({ type: 'TRANSLATE_BATCH', texts });
+        const response = await sendMessage({ type: "TRANSLATE_BATCH", texts });
         if (!response || !response.ok || !Array.isArray(response.result)) {
           return batch;
         }
 
         const translations = response.result;
         const unresolved = [];
+        const writes = [];
         batch.forEach((item, index) => {
           const translated = translations[index];
           if (translated) {
             translatedMap.set(item.text, translated);
-            item.node.nodeValue = item.node.nodeValue.replace(item.text, translated);
+            writes.push({ node: item.node, original: item.text, translated });
             if (onProgress) onProgress();
           } else {
             unresolved.push(item);
           }
         });
+        // Batch all DOM writes in a single animation frame to avoid reflow thrashing
+        if (writes.length) {
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => {
+              writes.forEach(({ node, original, translated }) => {
+                node.nodeValue = node.nodeValue.replace(original, translated);
+              });
+              resolve();
+            }),
+          );
+        }
         return unresolved;
       } catch (error) {
-        console.error('Batch translation failed', error);
+        console.error("Batch translation failed", error);
         return batch;
       }
     }

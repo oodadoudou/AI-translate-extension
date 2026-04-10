@@ -1,18 +1,21 @@
-export const STORAGE_KEY = 'aiTranslateConfig';
+export const STORAGE_KEY = "aiTranslateConfig";
 
 export const DEFAULT_CONFIG = {
-  baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-  model: 'deepseek-v3-2-251201',
-  apiKey: '',
-  targetLanguage: 'Simplified Chinese',
-  sourceLanguage: '',
-  systemInstruction: 'You are a precise translation engine.',
+  baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+  model: "deepseek-v3-2-251201",
+  apiKey: "",
+  targetLanguage: "Simplified Chinese",
+  sourceLanguage: "",
+  systemInstruction: "You are a precise translation engine.",
   autoDetect: true,
   enabled: true,
+  concurrency: 48,
   lastValidatedAt: 0,
 };
 
-const storageAreas = [chrome?.storage?.sync, chrome?.storage?.local].filter(Boolean);
+const storageAreas = [chrome?.storage?.sync, chrome?.storage?.local].filter(
+  Boolean,
+);
 
 function resolveStorageArea() {
   return storageAreas[0];
@@ -71,7 +74,7 @@ export async function setEnabled(enabled) {
 
 export function watchConfig(callback) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'sync' && areaName !== 'local') return;
+    if (areaName !== "sync" && areaName !== "local") return;
     if (!changes[STORAGE_KEY]) return;
     callback({ ...DEFAULT_CONFIG, ...(changes[STORAGE_KEY].newValue || {}) });
   });
